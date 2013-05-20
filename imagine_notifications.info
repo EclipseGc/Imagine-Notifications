@@ -6,7 +6,6 @@ version = 7.x-1.0-alpha1
 project = imagine_notifications
 dependencies[] = comment
 dependencies[] = flag
-dependencies[] = flag
 dependencies[] = message
 dependencies[] = page_manager
 dependencies[] = rules
