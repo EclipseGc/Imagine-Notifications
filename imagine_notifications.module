@@ -1,0 +1,94 @@
+<?php
+/**
+ * @file
+ * Code for the Imagine Notifications feature.
+ */
+
+include_once 'imagine_notifications.features.inc';
+
+/**
+ * Implements hook_entity_insert().
+ */
+function imagine_notifications_entity_insert($entity, $type) {
+  if ($type == 'message' && $entity->type == 'activity_notification') {
+    db_insert('imagine_notifications_unread')
+      ->fields(array(
+        'mid' => $entity->mid,
+        'uid' => $entity->uid,
+      ))
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_entity_view().
+ */
+function imagine_notifications_entity_view($entity, $type, $view_mode, $langcode) {
+  if ($type == 'message' && $entity->type == 'activity_notification') {
+    global $user;
+    db_delete('imagine_notifications_unread')
+      ->condition('uid', $user->uid)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function imagine_notifications_menu_alter(&$items) {
+  $items['notifications']['title callback'] = 'imagine_notifications_title_callback';
+  $items['notifications']['type'] = MENU_NORMAL_ITEM;
+  $items['notifications']['menu_name'] = 'user-menu';
+}
+
+/**
+ * Formats a menu title that includes the number of unread notifications.
+ *
+ * @param null $title
+ *   The optional menu title if provided.
+ * @return string
+ */
+function imagine_notifications_title_callback($title = NULL) {
+  $count = imagine_notifications_unread_count();
+
+  if ($count > 0) {
+    return format_plural($count, 'Notifications (1 new)', 'Notifications (@count new)');
+  }
+  return t('Notifications');
+}
+
+/**
+ * Provides a statically cached count of unread notifications per user.
+ *
+ * @param null $account
+ *   Optional user object.
+ * @return int
+ *   The number of unread notifications.
+ */
+function imagine_notifications_unread_count($account = NULL) {
+  $counts = &drupal_static(__FUNCTION__, array());
+  if (!$account || $account->uid == 0) {
+    global $user;
+    $account = $user;
+  }
+  if (!isset($counts[$account->uid])) {
+    $counts[$account->uid] = _imagine_notifications_unread_query($account)
+      ->execute()
+      ->fetchField();
+  }
+  return $counts[$account->uid];
+}
+
+/**
+ * Queries the database for the number of unread notifications for a user.
+ *
+ * @param $account
+ *   The user for whom we are retrieving a count of unread notifications.
+ * @return int
+ *   A count of unread notifications.
+ */
+function _imagine_notifications_unread_query($account) {
+  $query = db_select('imagine_notifications_unread', 'inu');
+  $query->addExpression('COUNT(DISTINCT inu.mid)');
+  return $query->condition('inu.uid', $account->uid);
+}

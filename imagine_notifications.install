@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @file
+ * Install file for imagine_notifications.module
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function imagine_notifications_schema() {
+  $schema = array();
+  $schema['imagine_notifications_unread'] = array(
+    'description'       => 'Keeps track of unread activity stream notifications.',
+    'fields'        => array(
+      'mid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'description' => 'The Unique ID of the message.',
+      ),
+      'uid' => array(
+        'description' => 'The user ID of the acting user.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+    ),
+  );
+  return $schema;
+}
